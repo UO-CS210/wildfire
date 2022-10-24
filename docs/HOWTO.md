@@ -508,7 +508,8 @@ the same function, just varying the color and size to make them
 visually distinctive: 
 
 ```python
-    centroid_symbols = plot_points(map, centroids, size_px=10, color="blue")
+    centroid_symbols = plot_points(fire_map, centroids, size_px=10, 
+                                   color="blue")
 ```
 
 You should see somethign like this (but not precisely, because the 
