@@ -601,7 +601,7 @@ closest centroid.   Here is the header for that function:
 ```python
 def assign_closest(points: list[tuple[int,int]],
                    centroids: list[tuple[int, int]]
-                   ) -> list[list[int, int]]:
+                   ) -> list[list[tuple[int, int]]]:
     """Returns a list of lists.  The i'th list contains the points
     assigned to the i'th centroid.  Each point is assigned to the
     centroid it is closest to.
