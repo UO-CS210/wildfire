@@ -71,8 +71,9 @@ class Display:
             graphic = self.symbols[symbol]
             self.visual.move_point(graphic, (easting, northing))
         if self.audio:
-            self.audio.plot_point(easting, northing, self.kinds[symbol])
+            self.audio.plot_cluster(easting, northing)
         if self.textual:
-            print(f"Cluster moves from {self.positions[symbol]} to ({easting, northing}")
+            self.textual.move_cluster(self.positions[symbol],
+                                      (easting, northing))
         self.positions[symbol] = (easting, northing)
 

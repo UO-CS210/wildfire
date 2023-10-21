@@ -12,15 +12,15 @@ add_utm.py for augmenting a data set with UTM coordinates.
 #   Settings for computation
 ####
 
-FIRE_DATA_PATH = "data/fire_five_utm.csv"
-# We can read just part of the data file to speed
-# debugging
-N_RECORDS = 20
+FIRE_DATA_PATH = "data/test_locations_utm.csv"
+# FIRE_DATA_PATH = "data/fire_excerpt_utm.csv"
+# FIRE_DATA_PATH = "data/fire_locations_utm.csv"
+
 # How many clusters should we try to make?
 N_CLUSTERS = 3
 # How long will we allow the algorithm to run?
 # (It will usually end much sooner)
-MAX_ITERATIONS = 20
+MAX_ITERATIONS = 10
 
 ####
 # Settings for display
@@ -31,7 +31,12 @@ BASEMAP_PATH = "data/Oregon.png"
 DISPLAY_VISUAL = True     # Make a visual display of the data
 DISPLAY_AUDIO = True      # Make an audio display of the data (requires Pygame)
 DISPLAY_TEXT = True       # Print the data (with verbosity level below)
-TEXT_VERBOSITY = 5  # Verbose
+
+# verbosity levels
+DISPLAY_CLUSTERS_ONLY = 1
+DISPLAY_FIRES_CONCISE = 3
+DISPLAY_FIRES_VERBOSE = 5
+TEXT_VERBOSITY = DISPLAY_FIRES_VERBOSE
 TEXT_COORD_GRID = 10   #  Compress coordinates to 0..TEXT_COORD_GRID
 
 BASEMAP_SIZE = (1024, 783)

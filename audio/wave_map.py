@@ -14,8 +14,9 @@ from . import pings
 # I just need notes that don't clash and have a discernable higher/lower
 # range.  Does C2 follow B2 or does C3 follow B2?
 TONES = [# "C2", "D2", "E2", "F2", "G2",  # Too low to hear
-         "A_3_piano", "B_3_piano", "C_3_pianoSTART",
-         "D_3_piano", "E_3_piano", "F_3_piano", "G_3_piano",
+         # "A_3_piano", "B_3_piano", "C_3_pianoSTART",
+         # "D_3_piano", "E_3_piano", "F_3_piano", "G_3_piano",
+        "A3", "B3", "C3", "D3", "E3", "F3", "G3",
          "A4", "B4", "C4", "D4", "E4", "F4", "G4",
          "A5", "B5", "C5"
          ]
@@ -41,6 +42,7 @@ class AudioMap:
         pings.init()
         self.origin = utm_origin
         self.extent = utm_ne_extent
+        pings.play(wave_path("bicycle_bell"), volume=0.2)
 
     def plot_fire(self, easting: int, northing: int):
         self.plot_point(easting, northing, volume=0.2)

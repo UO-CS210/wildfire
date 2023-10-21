@@ -171,24 +171,89 @@ Note:  Next term in CS 211 we will learn a more powerful and
 flexible way to associate one or more displays with our data 
 structures. 
 
-## Visual display: Basemap
+## Visual display
+
+A graphical display is included if `config.py` sets variable
+`DISPLAY_VISUAL` to `True`: 
+
+```python
+DISPLAY_VISUAL = True     # Make a visual display of the data
+```
+
+Several other entries in `config.py` provide information necessary 
+for the visual display, such as the relation between UTM coordinates 
+and screen pixels.  You should not have to modify any except the 
+`DISPLAY_VISUAL` variable itself.  
+
+## Text display
+
+The text "display" is controlled by variable `DISPLAY_TEXT` in 
+`config.py`.  You could disable it by setting `DISPLAY_TEXT` to 
+`False`, but you'll probably want to leave it enabled.  You can 
+further control how much is printed by setting a verbosity level, 
+controlled by variable `TEXT_VERBOSITY`. A verbose level is best for 
+initial debugging: 
+
+```python
+# verbosity levels
+DISPLAY_CLUSTERS_ONLY = 1
+DISPLAY_FIRES_CONCISE = 3
+DISPLAY_FIRES_VERBOSE = 5
+TEXT_VERBOSITY = DISPLAY_FIRES_VERBOSE  
+```
+
+At the verbose level, the position of a fire or cluster will be 
+displayed with UTM coordinates, and also scaled to 10 "grid" points, 
+like this: 
+
+```pycon
+Fire at 3, 0 (554203, 4655291)
+Fire at 8, 5 (909370, 4931132)
+Fire at 1, 0 (475718, 4660129)
+Fire at 3, 2 (568287, 4746368)
+Fire at 2, 2 (535456, 4757377)
+```
+
+This setting may be best for initial debugging with very small data 
+sets.  When testing with larger data sets, you may prefer only the 
+scaled grid coordinates.  Set `TEXT_VERBOSITY` to 
+`DISPLAY_FIRES_CONCISE` to make the textual display look like this: 
+
+```pycon
+Fire at 3, 0
+Fire at 8, 5
+Fire at 1, 0
+Fire at 3, 2
+Fire at 2, 2
+```
+
+For larger data sets, you may not wish to display individual fire 
+coordinates at all.  Set `TEXT_VERBOSITY` to `DISPLAY_CLUSTERS_ONLY` 
+to suppress them. 
+
+
+## Audio display
+
+The audio display at this time is rudimentary, and you may want to 
+disable it. It is controlled by variable `DISPLAY_AUDIO` in 
+`config.py`.  The audio is pairs of tones from the C scale, 
+interpolated from UTM coordinates similar to the grid coordinates in 
+the text display. 
+
+Audio display also requires installing the `PyGame` Python module, 
+which is not part of a standard Python distribution.  If you set 
+`DISPLAY_AUDIO` to `True` and you have not installed `PyGame`, you 
+will get an error message asking you to install it. 
+
+## Getting started: A basic plot
 
 Our graphical display will plot wildfire records and clusters over a 
 background map of 
 Oregon.  This _basemap_ was produced using an equal-area projection, 
 which is close but not identical to a projection based on UTM 
 coordinates. It is close enough that we can get a reasonable idea of 
-where recorded wildfires occur from the plot.
-
-The UTM coordinates of wildfire data can be aligned with the basemap 
-by noting the UTM coordinates of the lower-left and upper-right 
-corners of region displayed in the basemap.  We can determine how 
-many meters is represented by each pixel in the map image, and scale 
-data coordinates proportionately.  File 
-`config.py` contains reference information to align the
-visual map display with UTM coordinates. 
-
-##  Getting started: A basic plot
+where recorded wildfires occur from the plot.  (There is no basemap 
+for the text or audio displays.)
 
 I like to start a project that involves graphics or plots with a 
 basic data display, before beginning any analysis.  That provides 
@@ -198,6 +263,9 @@ For example, when I was preparing this project, I plotted four
 points at the north, south, east, and west corners of the mapped 
 area.  At first they all appeared in eastern Oregon, because my 
 translation of UTM coordinates to pixel coordinates was wrong.
+
+While the text and audio displays lack a basemap, we similarly want 
+to start with a very basic and predictable output for them. 
 
 ### Skeleton
 
@@ -238,7 +306,7 @@ create the basemap image and display it.  The image is in portable
 network graphics (PNG) form, in file `data/Oregon.png`.  Our 
 `config` module includes that information, along with information 
 about coordinates of the corners of the area represented by the 
-basemap. Our `display` module 
+basemap. 
 
 Now we will need only a single line in our `main` function to 
 create and display the map.  However, if we just create it and then 
@@ -249,7 +317,7 @@ presses enter.
 ```python
 def main():
     doctest.testmod()
-    fire_map = make_map()
+    fire_map = display.Display()
     input("Press enter to quit")
 ```
 
@@ -259,7 +327,12 @@ With visual display enabled, you should see something like this:
 
 With audio display enabled, you should hear a bicycle bell (an 
 arbitrary choice because it is short, not too unpleasant, and a
-free .wav file I could find easily).
+free .wav file I could find easily).  You will also see a message 
+from the `pygame` module in the console: 
+```pycon
+pygame 2.5.0 (SDL 2.28.0, Python 3.10.0)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+```
 
 ### Read the data
 
@@ -332,79 +405,64 @@ def in_bounds(easting: float, northing: float) -> bool:
 ```
 
 Write `get_fires_utm` to return a list of coordinate pairs that are 
-within bounds of the mapped area.  The test file 
+within bounds of the mapped area.   The test file 
 `data/test_locations_utm.csv` provides data for the included 
 test case, including two points that should be excluded because they 
 are outside the study area. 
 
 ### Plot the data
 
-Plotting the fire data is now straightforward. Our `make_map` 
-function returned a reference to the display.  We will create a 
-`plot_points` function to plot a list of (easting, northing) pairs 
-on the basemap.  Although the wildfire points will not move, later 
-we'll use the same function to point our evolving estimates of the 
-cluster centroids, so we'll return a list of references to the 
-graphics objects for each point.
+Plotting the fire data is now straightforward.  We will use the 
+`display` module to create a `Display` object that contains the 
+state of the visual, textual, and/or audio displays.  I called it 
+`fire_map` since the visual version looks like a map: 
 
 ```python
-def plot_points(fire_map: graphics.utm_plot.VisualMap,
-                points: list[tuple[int, int]],
-                size_px: int = 5,
-                color: str = "green") -> list:
-  """Plot all the points and return a list of handles that
-  can be used for moving them.
-  """
-  symbols = []
-  for point in points:
-    easting, northing = point
-    symbol = fire_map.plot_point(easting, northing,
-                                 size_px=size_px, color=color)
-    symbols.append(symbol)
-  return symbols
+fire_map = display.Display(display_visual=True)
 ```
 
-FIXME:  set a 'kind' value
-
-Note that this function header includes two _keyword parameters_, 
-`size_px` and `color`.  These specify default values that can be 
-overridden.  If we call 
+Next we use our `get_fires_utm` function to return a list of fire 
+coordinates: 
 
 ```python
-    fire_symbols = plot_points(map, points, color="red")
+fires = get_fires_utm(config.FIRE_DATA_PATH)
 ```
-we will override the default green color to make the plot points red,
-but they will be plotted at the default size of 5 pixels. 
 
-We can add two lines to our main program: 
+We can add two lines to our main program:
 
 ```python
-    points = get_fires_utm(config.FIRE_DATA_PATH)
-    fire_symbols = plot_points(fire_map, points, color="red")
+    for fire_easting, fire_northing in fires:
+        fire_map.plot_fire(fire_easting, fire_northing)    
 ```
 
-This should create a display like this: 
+Note that these lines go _before_ the line that asks the user to 
+press enter to quit.  
 
-![Basemap with fire locations](img/map-fires.png)
-
-If your display does not look like this, or if you just want to gain 
-confidence that it is acting reasonably, you can substitute the test 
-data from `test_locations_utm.csv`, like this: 
-
-```python
-    #points = get_fires_utm(config.FIRE_DATA_PATH)
-    points = get_fires_utm("data/test_locations_utm.csv")
-```
-
-The test data is four points approximately 100km from the east, west,
+The test data in  `data/test_locations_utm.csv`
+is four points approximately 100km from the east, west,
 north, and south boundaries, which should give a display that looks 
 like this: 
 
 ![A map of test data](img/map-test.png)
 
+Your text display should look like this if `TEXT_VERBOSITY` is set 
+to `DISPLAY_FIRES_VERBOSE`: 
+
+```pycon
+Fire at 1, 1 (442151, 4729315)
+Fire at 1, 8 (442151, 5071453)
+Fire at 8, 1 (914041, 4729315)
+Fire at 8, 8 (914041, 5071453)
+```
+
+Your audio display, if enabled, should likewise play four pairs of 
+tones.  The first note in each pair indicates easting,
+and the second indicates northing.  
+
 ## Parallel lists
 
-Now that we have our dataset and are able to plot it, it is time to 
+Now that we can read and plot a dataset, it is 
+time to 
 take on the core of our project, which is to find _clusters_ of fire 
 records.   We will do that by successive approximation:  We will 
 first make a _very bad_ guess as to how to group data, and then we 
@@ -417,16 +475,26 @@ We will represent groupings using parallel arrays:
 - The indexes of the list of centroids will be the same as the 
   indexes of the lists of assigned points. 
 
-In addition we will keep a list of the graphic symbols (circles) 
-used to represent each centroid on the map, again with the same 
-indexes.  We will need that so that we can move those circles around 
-on the display as our estimates improve. 
+In addition we will keep a list of the display 
+data associated with each cluster, again with the same 
+indexes.  This will permit us to move elements of the
+visual display around as our estimates improve. 
 
 ![Parallel array structure](img/parallel-arrays.png)
 
-In the illustration, we can see that the graphic symbol at index 2, 
+The diagram illustrates that we will have three distinct lists with 
+corresponding indexes.  One of these lists will hold centroids 
+(center points) of clusters.  Another will hold references to their 
+display in the `Display` structure. A third will hold a list of fire 
+coordinates.   What we think of as a "cluster" will be a row 
+consisting of an element from each of these three distinct lists. 
+For example, the 
+display symbol at index 2, 
 the centroid coordinates at index 2, and the list of wildfire 
-locations (taken from our list `points`) all refer to the same cluster.
+locations at index 2 (taken from our list `points`) are the 
+components of a single cluster. 
+
+## An initial guess 
 
 How can we make an initial bad guess?  Let's make it random.  I will 
 provide an implementation of random assignment, which you may find 
@@ -492,7 +560,7 @@ In our main function, we can create this initial random assignment of
 points to clusters: 
 
 ```python
-    partition = assign_random(points, config.N_CLUSTERS)
+    partition = assign_random(fires, config.N_CLUSTERS)
 ```
 
 Considering this is a _random_ assignment of points to clusters, I 
@@ -521,7 +589,10 @@ def centroid(points: list[tuple[int, int]]) -> tuple[int, int]:
 
 You will need to loop through `points`, keeping a sum for the `x` 
 coordinates and a sum for the `y` coordinates. You can then divide 
-each by `len(points)` to get the mean.  You may note that this is 
+each by `len(points)` to get the mean.  Use the `//` integer
+division operation to round down to an integer.  
+
+You may note that this is 
 another instance of the _accumulator pattern_ that we saw in the 
 course enrollment analysis. 
 
@@ -532,7 +603,7 @@ We'll have to treat this as a special case.  The approach I used was
 to return the value (0, 0) as the imaginary centroid of an empty 
 list of points.  The location (0, 0) is outside the bounds of our 
 basemap, so placing empty clusters at (0, 0) has the effect of 
-hiding them in the graphic display.  (An audio display will
+hiding them in the graphic display.  (Our audio display will
 treat (0,0) as a special case to skip.)
 
 To keep our main function short, we can write a very simple function 
@@ -560,23 +631,83 @@ in the main function like this:
 
 ## Plot the centroids
 
-We already have a function for plotting a set of (easting, northing) 
-pairs on the map.  We can plot the cluster centroids with a call to 
-the same function, just varying the color and size to make them 
-visually distinctive: 
+We'll need a function for plotting a set of (easting, northing) 
+pairs on the map.  It will return a list of references to the
+display data.  In other words, given the list of centroids, it will 
+return a parallel list of (references to) their display data. 
 
 ```python
-    centroid_symbols = plot_points(fire_map, centroids, size_px=10, 
-                                   color="blue")
+def plot_centroids(map: display.Display, 
+                   centroids: list[tuple[int, int]]
+                   ) -> list[int]: 
+    """Creates a display of each cluster, and returns a list of
+    references to the display data created (as integers)
+    """
+    symbols = []
+    for easting, northing in centroids:
+        symbol = map.plot_cluster(easting, northing)
+        symbols.append(symbol)
+    return symbols
 ```
 
-You should see something like this (but not precisely, because the 
-random assignment will be a little different each time you run the 
-program):
+We'll call this function from `main` after our initial (random) 
+assignment.  
 
-![Initial cluster](img/initial-cluster.png)
+```python
+    symbols = plot_centroids(centroids)
+```
 
-Notice that the centroids are near the center of the plot.  Can you 
+Since we began with a random assignment of first to clusters,
+displays of clusters will vary from one run to the next.  However,
+with our tiny set of four points in corners, it is not too hard to 
+determine whether the initial clusters look reasonable.  A typical 
+run might provide a textual display like this: 
+
+```pycon
+Fire at 1, 1 (442151, 4729315)
+Fire at 1, 8 (442151, 5071453)
+Fire at 8, 1 (914041, 4729315)
+Fire at 8, 8 (914041, 5071453)
+Cluster at 6, 3
+Empty cluster
+Cluster at 1, 8
+```
+
+The random assignment left one of the clusters empty.  Another had 
+only the fire at grid point (1, 8), so its centroid was exactly that 
+point.  Apparently the other three points were assigned to the 
+remaining cluster, so it was assigned a position roughly central to 
+those three points. 
+
+If you are using the visual display, it should be consistent with 
+the textual display.  For the textual display above, the 
+corresponding graphic would be
+
+
+![Initial cluster](img/cluster_four.png)
+
+At this point you may wish to experiment with  larger data 
+set, by changing the value of `FIRE_DATA_PATH` in `config.py`.  Be 
+warned, the audio display is very slow with large data sets.  I 
+found it barely tolerable with `data/fire_excerpt_utm.csv`, which 
+gave me this visual plot: 
+
+[Three initial clusters with 50 fires](img/cluster_excerpt.png)
+
+The centroids are near the center of the plot.  In the textual 
+display, we can see that one of them is actual covering another: 
+
+```pycon
+Fire at 3, 0 (554203, 4655291)
+Fire at 3, 2 (547961, 4773357)
+... many lines like this
+Fire at 5, 1 (684495, 4705369)
+Cluster at 5, 3
+Cluster at 5, 4
+Cluster at 5, 4
+```
+
+Can you 
 explain why?  Discuss with your classmates why we should usually 
 expect the initial centroids to be near the center.  If you 
 understand it, try explaining to a classmate.  If you don't 
@@ -669,7 +800,7 @@ def assign_closest(points: list[tuple[int,int]],
     """
 ```
 
-Let's visualize what this function does with the test case. 
+Let's consider what this function does with the test case. 
 
 ![Partitioning points by closest centroid](img/partition.png)
 
