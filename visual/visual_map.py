@@ -1,8 +1,9 @@
 """Plot UTM points on a basemap image.
 M Young, 2022-09-17
+2023 reorganized for multiple display modes.
 """
 
-import graphics.graphics as graphics
+import visual.graphics as graphics
 
 import logging
 logging.basicConfig()
@@ -10,6 +11,8 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 PT_MARK_SIZE = 3  # pixels
+CLUSTER_MARK_SIZE = 10
+
 
 # Contrasty colors for at least 10 groups
 COLOR_WHEEL = [
@@ -37,7 +40,7 @@ def choose_color() -> object:
         next_color = 0
     return choice
 
-class Map:
+class VisualMap:
     """A plot in UTM coordinates with a georeferenced image"""
     def __init__(self, basemap_path: str,
                  window: tuple[int, int],
@@ -63,9 +66,22 @@ class Map:
         """Convert easting, northing to x,y in canvas space"""
         pixel_x = int(self.pixels_per_meter_easting * (easting - self.utm_origin_easting))
         pixel_y = int(self.pixels_per_meter_northing * (northing - self.utm_origin_northing))
-        return (pixel_x, pixel_y)
+        return pixel_x, pixel_y
 
-    def plot_point(self, easting, northing, size_px: int=PT_MARK_SIZE, color: str = "red") -> graphics.Circle:
+    def plot_fire(self, easting, northing) -> graphics.Circle:
+        sym = self.plot_point(easting, northing,
+                        PT_MARK_SIZE, "red")
+        return sym
+
+    def plot_cluster(self, easting, northing) -> graphics.Circle:
+        sym = self.plot_point(easting, northing,
+                        CLUSTER_MARK_SIZE,
+                        choose_color())
+        return sym
+
+    def plot_point(self, easting,northing,
+                   size_px: int, color: str) -> graphics.Circle:
+
         pixel_x, pixel_y = self.pixel_coordinates(easting, northing)
         symbol = graphics.Circle(graphics.Point(pixel_x, pixel_y), size_px)
         symbol.setFill(color)

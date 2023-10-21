@@ -34,7 +34,7 @@ _converges_ on good clusters.
 
 One of the objectives of this project, of course, is to introduce 
 you to successive approximation as a problem-solving approach.  
-K-means clustering is just one example of this approach.  We will 
+K-means clustering is one example of this approach.  We will 
 see at least one more example of successive approximation applied to 
 geometric data this term, the Douglas-Peucker algorithm that 
 cartography and geographic information systems use to draw "good 
@@ -44,9 +44,16 @@ In addition, this project will give you a lot of practice in
 building and looping through lists.  Our approach will use a 
 structure called _parallel arrays_, meaning that we will associate 
 items in distinct lists with the same index.  We will use parallel 
-arrays to associate each cluster with its graphical 
-representation as a circle.  We will also use parallel arrays to 
-associate each cluster with a list of wildfire locations. 
+arrays to associate each cluster with a list of wildfire locations 
+and with whatever display is associated with that cluster. 
+
+Note:  Data science majors and other users of Python Pandas may be 
+interested to know that the `Series` (columns) in a Pandas `DataFrame` 
+are parallel arrays.  Similar "column-wise" organizations of 
+parallel arrays are also 
+widely used in scientific computing because, for the most common access 
+patterns to very large data sets, they can be more efficient than
+"row-wise" organization of the same tabular data. 
 
 ## Georeferenced data: Lat-Lon and UTM
 
@@ -100,13 +107,74 @@ relative to zone T10, even if they properly belong to zone T11.
 This means that there will be some moderate distortion for the 
 locations of points in eastern Oregon.  We will accept that much 
 distortion for the sake of simple distance calculations.  _The 
-distortion would be much worse, and would not be acceptable for a 
-significantly larger area, like the 
+distortion would be much worse, and would not be acceptable, for a 
+significantly larger area like the 
 whole of Europe or the continental United States_. 
 
-## Basemap
+### Smaller data files
 
-We will plot wildfire records and clusters over a background map of 
+Programmers spend a lot of time debugging.  Large data files can 
+make debugging slow and difficult, and even make it difficult to 
+judge whether a program is executing as expected.  To mitigate this, 
+I have created additional data files in the same format as
+`fire_locations_utm.csv`. 
+
+- `data/test_locations_utm.csv` is a minimal file with just four 
+  fire records, near the northwest, northeast, southwest, and 
+  southeast corner of Oregon.  This is "synthetic" (fake) data. 
+- `data/fire_excerpt_utm.csv` is real data taken from the
+  `fire_locations_utm.csv` file, but much less of it.  It contains
+  the first 50 fire records from the database. 
+- `data/fire_five_utm.csv` is an even shorter excerpt of real
+  data with just five fires.  This very small data set can be useful 
+  for debugging. 
+
+
+## Displays: Visual, Audio, and Text
+
+When we think of a "display", we may be inclined to think only of a 
+graphical display.  There are several reasons to consider a more 
+general notion of what a "display" could be, and to include modalities 
+other vision.  A key reason is accessibility: A non-visual display may 
+be more accessible to users with limited or no vision.  Additionally,
+an application that has been designed for multiple display 
+modalities will typically be easier to adapt to other display 
+variations, such as mobile and desktop versions. It can also be 
+useful to create diagnostic displays that are targeted
+to developers for 
+debugging, in addition to displays that are intended for end-users.
+
+The original version of the wildfires project had only a graphical 
+display, on a map.  This version has two additional, rather 
+rudimentary displays.  An audio display can play notes in which 
+easting and northing coordinates are represented by tones in a 
+musical scale (one ping for easting, another for northing).  The 
+text "display" is just printed text.
+
+The source file you will work on will make calls to a display 
+module that can produce any or all three of the supported modalities.
+Your program will be _agnostic_ regarding modality; it will simply 
+ask first and clusters to be plotted, and let the display module 
+forward requests to the modality-specific displays.  The display 
+module will consult a _configuration file_ `config.py` to determine 
+which displays to employ. 
+
+```python
+# Excerpt of config.py
+DISPLAY_VISUAL = True     # Make a visual display of the data
+DISPLAY_AUDIO = True      # Make an audio display of the data (requires Pygame)
+DISPLAY_TEXT = True       # Print the data (with verbosity level below)
+TEXT_VERBOSITY = 5  # Verbose
+```
+
+Note:  Next term in CS 211 we will learn a more powerful and 
+flexible way to associate one or more displays with our data 
+structures. 
+
+## Visual display: Basemap
+
+Our graphical display will plot wildfire records and clusters over a 
+background map of 
 Oregon.  This _basemap_ was produced using an equal-area projection, 
 which is close but not identical to a projection based on UTM 
 coordinates. It is close enough that we can get a reasonable idea of 
@@ -116,9 +184,9 @@ The UTM coordinates of wildfire data can be aligned with the basemap
 by noting the UTM coordinates of the lower-left and upper-right 
 corners of region displayed in the basemap.  We can determine how 
 many meters is represented by each pixel in the map image, and scale 
-data coordinates proportionately.  I have provided 
-`graphics/utm_plot.py` to plot points with this scaling. File 
-`config.py` contains the reference information for alignment. 
+data coordinates proportionately.  File 
+`config.py` contains reference information to align the
+visual map display with UTM coordinates. 
 
 ##  Getting started: A basic plot
 
@@ -154,43 +222,23 @@ if __name__ == "__main__":
 
 We will be taking data from a comma-separated values file, so add 
 `import csv` just after the import of `doctest`.   We will also need 
-to import the provided `utm_plot` module, which is in subdirectory 
-`graphics`.  [Python style guidelines](
+to import the provided `display` module.  [Python style guidelines](
 https://peps.python.org/pep-0008/#imports) recommend placing "local"
-imports after imports of system library modules, like this: 
+imports after imports of system library modules, like this:
 
 ```python
 import doctest
 import csv
 
-import graphics.utm_plot
+import display
 ```
-
-To use the `utm_plot` module, we will need information about the 
-basemap (its size in pixels, and its extent in UTM coordinates).  
-This information is kept separately from `wildfire.py`, in `config.
-py`. Add an `import` statement for `config`.  If you execute the 
-module again, it still doesn't do anything (there are no tests to 
-run yet), but it should execute without errors. 
-
-### Add the basemap
 
 I always feel better when I get _something_ to display.  Let's 
 create the basemap image and display it.  The image is in portable 
 network graphics (PNG) form, in file `data/Oregon.png`.  Our 
 `config` module includes that information, along with information 
 about coordinates of the corners of the area represented by the 
-basemap. We'll put creation of the map display in a function: 
-
-```python
-def make_map() -> graphics.utm_plot.Map:
-    """Create and return a basemap display"""
-    map = graphics.utm_plot.Map(config.BASEMAP_PATH,
-                                config.BASEMAP_SIZE,
-                                (config.BASEMAP_ORIGIN_EASTING, config.BASEMAP_ORIGIN_NORTHING),
-                                (config.BASEMAP_EXTENT_EASTING, config.BASEMAP_EXTENT_NORTHING))
-    return map
-```
+basemap. Our `display` module 
 
 Now we will need only a single line in our `main` function to 
 create and display the map.  However, if we just create it and then 
@@ -205,9 +253,13 @@ def main():
     input("Press enter to quit")
 ```
 
-You should see something like this: 
+With visual display enabled, you should see something like this: 
 
 ![Basemap display](img/basemap.png)
+
+With audio display enabled, you should hear a bicycle bell (an 
+arbitrary choice because it is short, not too unpleasant, and a
+free .wav file I could find easily).
 
 ### Read the data
 
@@ -249,7 +301,10 @@ around the world.  I am not certain why the specification of the
 line-ending convention is required, but the csv module 
 documentations says we need it when using a `DictReader`, so here it 
 is.  I know these are necessary because encountered errors until I 
-added `newline=""` and `encoding="utf-8"`. 
+added `newline=""` and `encoding="utf-8"`.  (As of fall 2023, this
+seems to differ between Windows and MacOS even with the same version 
+of Python, but the encoding option always works even if it is not 
+always required.)
 
 Note that the data we read from the input file is all text.  The 
 string value `"554203"` is not a number, even though all of its 
@@ -278,7 +333,7 @@ def in_bounds(easting: float, northing: float) -> bool:
 
 Write `get_fires_utm` to return a list of coordinate pairs that are 
 within bounds of the mapped area.  The test file 
-`data/fire_locations_utm.csv` provides data for the included 
+`data/test_locations_utm.csv` provides data for the included 
 test case, including two points that should be excluded because they 
 are outside the study area. 
 
@@ -290,24 +345,26 @@ function returned a reference to the display.  We will create a
 on the basemap.  Although the wildfire points will not move, later 
 we'll use the same function to point our evolving estimates of the 
 cluster centroids, so we'll return a list of references to the 
-graphics objects for each point. 
+graphics objects for each point.
 
 ```python
-def plot_points(fire_map: graphics.utm_plot.Map,
-                points:  list[tuple[int, int]],
+def plot_points(fire_map: graphics.utm_plot.VisualMap,
+                points: list[tuple[int, int]],
                 size_px: int = 5,
                 color: str = "green") -> list:
-    """Plot all the points and return a list of handles that
-    can be used for moving them.
-    """
-    symbols = []
-    for point in points:
-        easting, northing = point
-        symbol = fire_map.plot_point(easting, northing, 
-                                     size_px=size_px, color=color)
-        symbols.append(symbol)
-    return symbols
+  """Plot all the points and return a list of handles that
+  can be used for moving them.
+  """
+  symbols = []
+  for point in points:
+    easting, northing = point
+    symbol = fire_map.plot_point(easting, northing,
+                                 size_px=size_px, color=color)
+    symbols.append(symbol)
+  return symbols
 ```
+
+FIXME:  set a 'kind' value
 
 Note that this function header includes two _keyword parameters_, 
 `size_px` and `color`.  These specify default values that can be 
@@ -475,7 +532,8 @@ We'll have to treat this as a special case.  The approach I used was
 to return the value (0, 0) as the imaginary centroid of an empty 
 list of points.  The location (0, 0) is outside the bounds of our 
 basemap, so placing empty clusters at (0, 0) has the effect of 
-hiding them. 
+hiding them in the graphic display.  (An audio display will
+treat (0,0) as a special case to skip.)
 
 To keep our main function short, we can write a very simple function 
 for computing the centroids of all the clusters: 
@@ -512,7 +570,7 @@ visually distinctive:
                                    color="blue")
 ```
 
-You should see somethign like this (but not precisely, because the 
+You should see something like this (but not precisely, because the 
 random assignment will be a little different each time you run the 
 program):
 
@@ -631,28 +689,27 @@ of `n` clusters, you can find the number of clusters as
 `len(centroids)`. 
 
 To see our progress, we'll add a function that moves each of symbols 
-representing clusters to their new centroids: 
+representing clusters to their new centroids:
 
 ```python
-def move_points(fire_map: graphics.utm_plot.Map,
-                points:  list[tuple[int, int]], 
-                symbols: list): 
-    """Move a set of symbols to new points"""
-    for i in range(len(points)):
-        fire_map.move_point(symbols[i], points[i])
+def move_points(fire_map: graphics.utm_plot.VisualMap,
+                points: list[tuple[int, int]],
+                symbols: list):
+  """Move a set of symbols to new points"""
+  for i in range(len(points)):
+    fire_map.move_point(symbols[i], points[i])
 ```
 
 I'd also like to see how the fires are grouped at the end, so I'll 
-write one more function to display connections at the conclusion: 
-
+write one more function to display connections at the conclusion:
 
 ```python
-def show_clusters(fire_map: graphics.utm_plot.Map, 
-                  centroid_symbols: list, 
+def show_clusters(fire_map: graphics.utm_plot.VisualMap,
+                  centroid_symbols: list,
                   assignments: list[list[tuple[int, int]]]):
-    """Connect each centroid to all the points in its cluster"""
-    for i in range(len(centroid_symbols)):
-        fire_map.connect_all(centroid_symbols[i], assignments[i])
+  """Connect each centroid to all the points in its cluster"""
+  for i in range(len(centroid_symbols)):
+    fire_map.connect_all(centroid_symbols[i], assignments[i])
 ```
 
 We can test how it does after one reassignment of points to clusters: 

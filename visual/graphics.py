@@ -1,8 +1,8 @@
-# graphics.py
-"""Simple object oriented graphics library  
+# visual.py
+"""Simple object oriented visual library
 
 The library is designed to make it very easy for novice programmers to
-experiment with computer graphics in an object oriented fashion. It is
+experiment with computer visual in an object oriented fashion. It is
 written by John Zelle for use with the book "Python Programming: An
 Introduction to Computer Science" (Franklin, Beedle & Associates).
 
@@ -21,7 +21,7 @@ simple example, here is a complete program to draw a circle of radius
 10 centered in a 100x100 window:
 
 --------------------------------------------------------------------
-from graphics import *
+from visual import *
 
 def main():
     win = GraphWin("My Circle", 100, 100)
@@ -91,7 +91,7 @@ __version__ = "5.0"
 #     * Modified to run in either Python 2.x or 3.x (same file).
 #     * Added Image.getPixmap()
 #     * Added update() -- stand alone function to cause any pending
-#           graphics changes to display.
+#           visual changes to display.
 #
 # Version 3.4 10/16/07
 #     Fixed GraphicsError to avoid "exploded" error messages.
@@ -101,7 +101,7 @@ __version__ = "5.0"
 #     Fixed error in Polygon init spotted by Andrew Harrington
 #     Fixed improper threading in Image constructor
 # Version 3.2.2 5/30/05
-#     Cleaned up handling of exceptions in Tk thread. The graphics package
+#     Cleaned up handling of exceptions in Tk thread. The visual package
 #     now raises an exception if attempt is made to communicate with
 #     a dead Tk thread.
 # Version 3.2.1 5/22/05
@@ -128,7 +128,7 @@ __version__ = "5.0"
 #     Now implements deep copy of config info.
 # Version 2.1 1/15/04
 #     Added autoflush option to GraphWin. When True (default) updates on
-#        the window are done after each action. This makes some graphics
+#        the window are done after each action. This makes some visual
 #        intensive programs sluggish. Turning off autoflush causes updates
 #        to happen during idle periods or when flush is called.
 # Version 2.0
@@ -137,7 +137,7 @@ __version__ = "5.0"
 #     Made all drawing functions call TK update for easier animations
 #          and to make the overall package work better with
 #          Python 2.3 and IDLE 1.0 under Windows (still some issues).
-#     Removed vestigial turtle graphics.
+#     Removed vestigial turtle visual.
 #     Added ability to configure font for Entry objects (analogous to Text)
 #     Added setTextColor for Text as an alias of setFill
 #     Changed to class-style exceptions
@@ -172,7 +172,7 @@ except:
 # Module Exceptions
 
 class GraphicsError(Exception):
-    """Generic error class for graphics module exceptions."""
+    """Generic error class for visual module exceptions."""
     pass
 
 OBJ_ALREADY_DRAWN = "Object currently drawn"
@@ -205,7 +205,7 @@ def update(rate=None):
         
 class GraphWin(tk.Canvas):
 
-    """A GraphWin is a toplevel window for displaying graphics."""
+    """A GraphWin is a toplevel window for displaying visual."""
 
     def __init__(self, title="Graphics Window",
                  width=200, height=200, autoflush=True):
