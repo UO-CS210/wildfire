@@ -79,6 +79,10 @@ class VisualMap:
                         choose_color())
         return sym
 
+    def mark_cycle(self):
+        """Indication (none, for visual) of clustering cycle iteration"""
+        pass
+
     def plot_point(self, easting,northing,
                    size_px: int, color: str) -> graphics.Circle:
 
@@ -96,9 +100,24 @@ class VisualMap:
         old_x, old_y = old_center.x, old_center.y
         symbol.move(pixel_x - old_x, pixel_y - old_y)
 
+    def show_connections(self,
+                         hub: graphics.Circle,
+                         connections: list[tuple[int, int]]):
+        """Show connections as rays from hubs."""
+        center = hub.getCenter()
+        shade = hub.config["fill"]
+        for easting, northing in connections:
+            x, y = self.pixel_coordinates(easting, northing)
+            fire = graphics.Point(x, y)  # Location, not the circle there
+            ray = graphics.Line(center, fire)
+            ray.setOutline(shade)
+            ray.draw(self.window)
+
+
+
     def connect_all(self,
              symbol: graphics.Circle,
-             group: list[tuple[float, float]]):
+             group: list[tuple[int, int]]):
         color = choose_color()
         symbol.setFill(color)
         center = symbol.getCenter()

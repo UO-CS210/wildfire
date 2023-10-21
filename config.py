@@ -12,8 +12,8 @@ add_utm.py for augmenting a data set with UTM coordinates.
 #   Settings for computation
 ####
 
-FIRE_DATA_PATH = "data/test_locations_utm.csv"
-# FIRE_DATA_PATH = "data/fire_excerpt_utm.csv"
+# FIRE_DATA_PATH = "data/test_locations_utm.csv"
+FIRE_DATA_PATH = "data/fire_excerpt_utm.csv"
 # FIRE_DATA_PATH = "data/fire_locations_utm.csv"
 
 # How many clusters should we try to make?
@@ -36,7 +36,7 @@ DISPLAY_TEXT = True       # Print the data (with verbosity level below)
 DISPLAY_CLUSTERS_ONLY = 1
 DISPLAY_FIRES_CONCISE = 3
 DISPLAY_FIRES_VERBOSE = 5
-TEXT_VERBOSITY = DISPLAY_FIRES_VERBOSE
+TEXT_VERBOSITY = DISPLAY_CLUSTERS_ONLY
 TEXT_COORD_GRID = 10   #  Compress coordinates to 0..TEXT_COORD_GRID
 
 BASEMAP_SIZE = (1024, 783)

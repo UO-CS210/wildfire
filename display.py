@@ -43,7 +43,7 @@ class Display:
             self.textual = text.TextMap(verbosity=config.TEXT_VERBOSITY)
 
     def plot_fire(self, easting: int, northing: int) -> int:
-        index = len(self.symbols) + 1
+        index = len(self.symbols)
         self.positions.append((easting, northing))
         self.kinds.append("fire")
         if self.visual:
@@ -53,9 +53,20 @@ class Display:
         if self.textual:
             self.textual.plot_fire(easting, northing)
 
+    def mark_cycle(self):
+        """Indicate that we have begun an iteration of
+        clustering.  Indication varies by display mode.
+        """
+        if self.visual:
+            self.visual.mark_cycle()
+        if self.audio:
+            self.audio.mark_cycle()
+        if self.textual:
+            self.textual.mark_cycle()
+
 
     def plot_cluster(self, easting: int, northing: int) -> int:
-        index = len(self.symbols) + 1
+        index = len(self.symbols)
         self.positions.append((easting, northing))
         self.kinds.append("cluster")
         if self.visual:
@@ -64,9 +75,11 @@ class Display:
             self.audio.plot_cluster(easting, northing)
         if self.textual:
             self.textual.plot_cluster(easting, northing)
+        return len(self.symbols) - 1
 
 
-    def move_point(self, symbol: int, easting: int, northing: int):
+    def move_symbol(self, symbol: int, to_location: tuple[int, int]):
+        easting, northing = to_location
         if self.visual:
             graphic = self.symbols[symbol]
             self.visual.move_point(graphic, (easting, northing))
@@ -77,3 +90,17 @@ class Display:
                                       (easting, northing))
         self.positions[symbol] = (easting, northing)
 
+    def show_connections(self,
+                         symbols: list[int],
+                         connected_to: list[list[tuple[int, int]]]
+                         ):
+        for i in range(len(symbols)):
+            sym_idx = symbols[i]
+            if self.visual:
+                hub = self.symbols[sym_idx]
+                self.visual.show_connections(hub, connected_to[i])
+            if self.audio:
+                pass  # Don't know how to do this with sound
+            if self.textual:
+                hub = self.positions[i]
+                self.textual.show_connections(hub, connected_to[i])

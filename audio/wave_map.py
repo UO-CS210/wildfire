@@ -50,6 +50,10 @@ class AudioMap:
     def plot_cluster(self, easting: int, northing: int):
         self.plot_point(easting, northing, volume=0.5)
 
+    def mark_cycle(self):
+        """Indicate that a cycle of clustering has begun"""
+        pings.play(wave_path("bicycle_bell"), volume=0.1)
+
     def plot_point(self, easting: int, northing: int,
                    volume: float):
         x_origin, y_origin = self.origin
@@ -60,6 +64,11 @@ class AudioMap:
         time.sleep(.05)
         pings.play(y_wave, volume)
         time.sleep(.10)
+
+    def show_connections(self,
+                         hubs: list[tuple[int, int]],
+                         connections: list[list[tuple[int, int]]]):
+        pass
 
 def interpolate(q: int, limit_low: int, limit_high: int) -> str:
     """Path to a wave file selected by interpolation

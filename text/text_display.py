@@ -27,6 +27,10 @@ class TextMap:
         elif self.verbosity == config.DISPLAY_CLUSTERS_ONLY:
             pass
 
+    def mark_cycle(self):
+        """Indicate that a cycle of clustering has begun"""
+        print("\nClustering")
+
     def plot_cluster(self, easting: int, northing: int):
         if easting == 0 and northing == 0:
             # Special case for empty cluster
@@ -56,4 +60,26 @@ class TextMap:
             print(f"Cluster at {old_x}, {old_y} nudged slightly")
         else:
             print(f"Cluster at {old_x}, {old_y} moved to {new_x}, {new_y}")
+
+    def show_connections(self,
+                         hub: tuple[int, int],
+                         connections: list[tuple[int, int]]):
+        """Final description of clusters."""
+        hub_east, hub_north = hub
+        hub_x, hub_y = self.to_grid(hub_east, hub_north)
+        n_connections = len(connections)
+        if self.verbosity >= config.DISPLAY_FIRES_CONCISE:
+            print(f"Cluster at {hub_x}, {hub_y} ({hub_east}, {hub_north}) contains"
+                  f" {n_connections} fire records:")
+            for fire in connections:
+                fire_east, fire_north = fire
+                fire_x, fire_y = self.to_grid(fire_east, fire_north)
+                if self.verbosity == config.DISPLAY_FIRES_VERBOSE:
+                    print(f"fire {fire_x}, {fire_y} ({fire_east}, {fire_north})")
+                else:
+                    print(f"fire {fire_x}, {fire_y};", end=" ")
+            print()
+        else:
+            print(f"Cluster at {hub_x}, {hub_y} ({hub_east}, {hub_north}) contains"
+                  f" {n_connections} fire records")
 

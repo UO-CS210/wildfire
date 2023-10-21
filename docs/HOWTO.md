@@ -634,7 +634,7 @@ in the main function like this:
 We'll need a function for plotting a set of (easting, northing) 
 pairs on the map.  It will return a list of references to the
 display data.  In other words, given the list of centroids, it will 
-return a parallel list of (references to) their display data. 
+return a parallel list of (references to) their display data.
 
 ```python
 def plot_centroids(map: display.Display, 
@@ -643,12 +643,16 @@ def plot_centroids(map: display.Display,
     """Creates a display of each cluster, and returns a list of
     references to the display data created (as integers)
     """
+    display.mark_cycle() 
     symbols = []
     for easting, northing in centroids:
         symbol = map.plot_cluster(easting, northing)
         symbols.append(symbol)
     return symbols
 ```
+
+`plot_centroids` begins with a call to `mark_cycle` so that
+successive rounds of clustering can be distinguished. 
 
 We'll call this function from `main` after our initial (random) 
 assignment.  
@@ -752,7 +756,7 @@ two points:
 def sq_dist(p1: tuple[int, int], p2: tuple[int, int]) -> int:
     """Square of Euclidean distance between p1 and p2
 
-    >>> sq_dist([2, 3], [3, 5])
+    >>> sq_dist((2, 3), (3, 5))
     5
     """
     x1, y1 = p1
@@ -776,9 +780,13 @@ def closest_index(point: tuple[int, int], centroids: list[tuple[int, int]]) -> i
     """
 ```
 
-You can visualize the test case this way: 
-
 ![Choosing the index of the closest centroid](img/closest-index.png)
+
+While we find that (5, 5) is closest to point (4, 5)
+in the list `centroids`, we return the _index_ of that
+point, which is 1, rather than the point itself.  In this
+way our result refers to the whole imaginary row of values
+at index 1 in our parallel lists. 
 
 ### Partition the points
 
@@ -811,7 +819,7 @@ index 1.  It similarly inspects point (2,2) and again finds that it
 fits best in the cluster at index 1.  It inspects point (5,5) and 
 finds that (5,5) is closer to (4,4) and therefore goes in the 
 assignment at index 0.  It returns the list of assignments, which is 
-now [[(5,5)], [(1,1), (2,2)]], i.e., (5,5) assigned to the first 
+now [[(5,5)], [(1,1), (2,2)]], i.e., (5,5) is assigned to the first 
 cluster and (1,1) and (2,2) both assigned to the second. 
 
 To write this function, start with a copy of `assign_random`, then 
@@ -823,13 +831,18 @@ To see our progress, we'll add a function that moves each of symbols
 representing clusters to their new centroids:
 
 ```python
-def move_points(fire_map: graphics.utm_plot.VisualMap,
-                points: list[tuple[int, int]],
-                symbols: list):
-  """Move a set of symbols to new points"""
-  for i in range(len(points)):
-    fire_map.move_point(symbols[i], points[i])
+def show_moves(fire_map: display.Display,
+               symbols: list[int],
+               locations: list[tuple[int, int]]):
+  """Display movement of symbols to new positions.
+  Symbols and locations (centroids) are parallel lists.
+  Each element symbols[i] will e moved to the 
+  corresponding locations[i]. 
+  """
+  for i in range(len(symbols)):
+    fire_map.move_symbol(symbols[i], locations[i])
 ```
+
 
 I'd also like to see how the fires are grouped at the end, so I'll 
 write one more function to display connections at the conclusion:
@@ -848,31 +861,53 @@ We can test how it does after one reassignment of points to clusters:
 ```python
 def main():
     doctest.testmod()
-    fire_map = make_map()
-    points = get_fires_utm(config.FIRE_DATA_PATH)
-    fire_symbols = plot_points(fire_map, points, color="red")
+    fire_map = display.Display()
+    fires = get_fires_utm(config.FIRE_DATA_PATH)
+    for fire_easting, fire_northing in fires:
+        fire_map.plot_fire(fire_easting, fire_northing)
 
     # Initial random assignment
-    partition = assign_random(points, config.N_CLUSTERS)
+    partition = assign_random(fires, config.N_CLUSTERS)
     centroids = cluster_centroids(partition)
-    centroid_symbols = plot_points(fire_map, centroids, size_px=10, color="blue")
+    symbols = plot_centroids(fire_map, centroids)
 
     # Improved assignment
-    partition = assign_closest(points, centroids)
+    partition = assign_closest(fires, centroids)
     centroids = cluster_centroids(partition)
-    move_points(fire_map, centroids, centroid_symbols)
-    
+    show_moves(fire_map, symbols, centroids)
+
     # Show connections at end
-    show_clusters(fire_map, centroid_symbols, partition)
+    fire_map.show_connections(symbols, partition)
 
     input("Press enter to quit")
 ```
 
-You are likely to see that the cluster centroids are already 
+You are likely to observe that the cluster centroids are already 
 starting to spread out toward true clusters. 
 
-![After one reassignment](img/second-cluster.png)
+![After one reassignment, with many fires](img/second-cluster.png)
 
+With a small number of fires, three clusters
+(`N_CLUSTERS = 3`), and the text verbosity 
+set to
+`DISPLAY_CLUSTERS_ONLY`, the textual display might look
+like this: 
+
+```pycon
+Clustering
+Cluster at 4, 4
+Cluster at 6, 4
+Cluster at 5, 3
+
+Clustering
+Cluster at 4, 4 moved to 3, 3
+Cluster at 6, 4 moved to 8, 6
+Cluster at 5, 3 moved to 4, 1
+Cluster at 3, 0 (554203, 4655291) contains 14 fire records
+Cluster at 3, 2 (547961, 4773357) contains 10 fire records
+Cluster at 7, 6 (830769, 4990031) contains 5 fire records
+Press enter to quit
+```
 
 ## Iterate to a solution
 
@@ -894,39 +929,77 @@ main function can therefore look like this:
 ```python
 def main():
     doctest.testmod()
-    fire_map = make_map()
-    points = get_fires_utm(config.FIRE_DATA_PATH)
-    fire_symbols = plot_points(fire_map, points, color="red")
+    fire_map = display.Display()
+    fires = get_fires_utm(config.FIRE_DATA_PATH)
+    for fire_easting, fire_northing in fires:
+        fire_map.plot_fire(fire_easting, fire_northing)
 
     # Initial random assignment
-    partition = assign_random(points, config.N_CLUSTERS)
+    partition = assign_random(fires, config.N_CLUSTERS)
     centroids = cluster_centroids(partition)
-    centroid_symbols = plot_points(fire_map, centroids, size_px=10, color="blue")
+    symbols = plot_centroids(fire_map, centroids)
 
-    # Continue improving assignment until assignment doesn't change
+    # Improved assignment
     for i in range(config.MAX_ITERATIONS):
         old_partition = partition
-        partition = assign_closest(points, centroids)
+        partition = assign_closest(fires, centroids)
         if partition == old_partition:
             # No change ... this is "convergence"
-            break
+            break  # This "breaks out" of the "for" loop
         centroids = cluster_centroids(partition)
-        move_points(fire_map, centroids, centroid_symbols)
+        show_moves(fire_map, symbols, centroids)
 
     # Show connections at end
-    show_clusters(fire_map, centroid_symbols, partition)
-
+    fire_map.show_connections(symbols, partition)
     input("Press enter to quit")
 ```
 
 You may see a result something like this: 
 
-![Final iterated solution](img/iterated-solution.png)
+![Final iterated solution with many fires](img/iterated-solution.png)
+
+With a small amount of data and the lowest setting of
+`config.TEXT_VERBOSITY`, the textual display might look
+something like this: 
+
+```pycon
+Clustering
+Cluster at 2, 3
+Cluster at 5, 4
+Cluster at 5, 4
+
+Clustering
+Cluster at 2, 3 moved to 2, 2
+Cluster at 5, 4 moved to 6, 6
+Cluster at 5, 4 moved to 7, 4
+
+Clustering
+Cluster at 2, 2 moved to 3, 2
+Cluster at 6, 6 unchanged
+Cluster at 6, 6 nudged slightly
+Cluster at 7, 4 moved to 8, 5
+
+Clustering
+Cluster at 3, 2 unchanged
+Cluster at 3, 2 nudged slightly
+Cluster at 6, 6 moved to 5, 5
+Cluster at 8, 5 moved to 9, 6
+
+Clustering
+Cluster at 3, 2 unchanged
+Cluster at 3, 2 nudged slightly
+Cluster at 5, 5 nudged slightly
+Cluster at 9, 6 moved to 8, 6
+Cluster at 3, 0 (554203, 4655291) contains 15 fire records
+Cluster at 3, 2 (547961, 4773357) contains 5 fire records
+Cluster at 7, 6 (830769, 4990031) contains 9 fire records
+Press enter to quit
+```
 
 It will not always be the same.  The naive k-means clustering 
 algorithm will converge to different solutions depending on the 
 initial random assignment.  It is common to run it multiple times 
-and take the "best" solution, for some definition of "best".  
+and take the "best" solution, for some definition of "best".
 
 ## Challenge yourself
 
