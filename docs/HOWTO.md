@@ -319,11 +319,13 @@ overridden.  If we call
 we will override the default green color to make the plot points red,
 but they will be plotted at the default size of 5 pixels. 
 
-We can add two lines to our main program: 
+We can add two lines to our main program, before the `input` 
+statement that shuts it down: 
 
 ```python
     points = get_fires_utm(config.FIRE_DATA_PATH)
     fire_symbols = plot_points(fire_map, points, color="red")
+    input("Press enter to quit")
 ```
 
 This should create a display like this: 
