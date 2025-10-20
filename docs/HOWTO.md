@@ -33,8 +33,9 @@ _converges_ on good clusters.
 ## Learning objectives
 
 One of the objectives of this project, of course, is to introduce 
-you to successive approximation as a problem-solving approach.  
-K-means clustering is just one example of this approach.  We will 
+you to successive approximation as a problem-solving approach.
+K-means clustering is one example of this approach.  Our earlier
+project estimating π by throwing darts was another.  We will 
 see at least one more example of successive approximation applied to 
 geometric data this term, the Douglas-Peucker algorithm that 
 cartography and geographic information systems use to draw "good 
@@ -83,7 +84,7 @@ we wish to cluster data by geographic distance, latitude and
 longitude (often called "lat-lon") are not easy to use.  
 
 I have pre-processed this database into another file, 
-`data/fire_locations_utm.csv`.  This is the same data, with two 
+`data/fire_locations_utm.csv`.  This is the same data, with three 
 extra columns, `Easting`, `Northing`, and `UTM Zone`.  These columns 
 represent location data using a map projection called
 [Universal Transverse Mercator](
@@ -134,7 +135,7 @@ translation of UTM coordinates to pixel coordinates was wrong.
 ### Skeleton
 
 Start with the usual skeleton for an application that includes 
-doctests. 
+doctests. Save it as `wildfire.py`.  
 
 ```python
 """Geographic clustering of historical wildfire data
@@ -239,17 +240,18 @@ You will need to specify the encoding and line-ending conventions
 for the input file, like this: 
 
 ```python
-    with open(path, newline="", encoding="utf-8") as source_file:
+    with open(path, newline="", encoding="utf-8-sig") as source_file:
         reader = csv.DictReader(source_file)
 ```
 
 UTF-8 is the most common of several possible encodings of the 
 Unicode character set, which supports characters from many languages 
-around the world.  I am not certain why the specification of the 
+around the world.  "utf-8-sig" tells Python that the file uses this encoding;  the "-sig" suffix tells Python to skip over an optional starting character called a "byte order marker" or BOM often found in CSV files exported from Excel.
+I am not certain why the specification of the 
 line-ending convention is required, but the csv module 
 documentations says we need it when using a `DictReader`, so here it 
 is.  I know these are necessary because encountered errors until I 
-added `newline=""` and `encoding="utf-8"`. 
+added `newline=""` and `encoding="utf-8-sig"`. 
 
 Note that the data we read from the input file is all text.  The 
 string value `"554203"` is not a number, even though all of its 
@@ -276,7 +278,7 @@ def in_bounds(easting: float, northing: float) -> bool:
     return True
 ```
 
-Write `get_fires_utm` to return a list of coordinate pairs that are 
+Write a function `get_fires_utm` to return a list of coordinate pairs that are 
 within bounds of the mapped area.  The test file 
 `data/fire_locations_utm.csv` provides data for the included 
 test case, including two points that should be excluded because they 
@@ -418,7 +420,7 @@ should make.   We use it first to create enough empty lists:
         assignments.append([])
 ```
 
-and later we use `n` to randomly choose a one of the lists to add a 
+and later we use `n` to randomly choose one of the lists to add a 
 point to. 
 
 The result type for this function is 
@@ -541,7 +543,8 @@ from each point to each cluster centroid ... almost.
 
 Euclidean 
 distance between $(x_1, y_1)$ and $(x_2, y_2)$ is 
-$$\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$$.
+$ \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2} $ . 
+
 However, we don't really 
 need to know the distance between points.  We just need any 
 _monotone function_ of distance.  A function _f_ is _monotone_ if
@@ -744,21 +747,21 @@ and take the "best" solution, for some definition of "best".
 
 ## Challenge yourself
 
-There are many variations on naive k-means.  For example, when one 
-of the clusters becomes empty, you might consider "stealing" half 
-the points from a cluster with more than its share, thereby 
-subdividing the largest clusters.  There are many good sources 
+There are many variations on naive k-means.  For example, when one
+of the clusters becomes empty, you might consider "stealing" half
+the points from a cluster with more than its share, thereby
+subdividing the largest clusters.  There are many good sources
 online describing both small variations and completely different 
 approaches to clustering. 
 
-You might also experiment with selecting the data.  We have been 
-treating all wildfires as equivalent, regardless of size.  We see a 
+You might also experiment with selecting the data.  We have been
+treating all wildfires as equivalent, regardless of size.  We see a
 very large number of wildfire records around the Portland 
-metropolitan area, but some of them are very small.  Could it be 
-that a small fire near a major metropolitan area is more likely to 
-be observed and recorded than a small fire in a more rural area?  
-Would you get different clusters if you used only records of larger 
-fires (e.g., using the `DailyAcres` column to select first of at 
+metropolitan area, but some of them are very small.  Could it be
+that a small fire near a major metropolitan area is more likely to
+be observed and recorded than a small fire in a more rural area?
+Would you get different clusters if you used only records of larger
+fires (e.g., using the `DailyAcres` column to select fires of at
 least 10 acres)?  
 
 
